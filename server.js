@@ -1,4 +1,4 @@
-// server.js (replace your current file with this)
+// server.js
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -6,57 +6,57 @@ const { Server } = require("socket.io");
 const app = express();
 const server = http.createServer(app);
 
-// serve frontend from public/
+// Serve frontend
 app.use(express.static("public"));
 
-// allow all origins for quick deploy; tighten later in production
+// Users in rooms
+const rooms = {}; // room -> Set of socket ids
+
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
+  cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id);
 
-  // join a room
+  // Join chat room
   socket.on("joinChat", ({ room, username }) => {
-    if (!room) room = "general";
+    if (!rooms[room]) rooms[room] = new Set();
+    rooms[room].add(socket.id);
     socket.join(room);
-    socket.data.username = username || "Unknown";
-    console.log(`${socket.data.username} (${socket.id}) joined room: ${room}`);
+    socket.data.username = username;
+
+    // Send other users in room to this user
+    const otherUsers = Array.from(rooms[room]).filter(id => id !== socket.id);
+    socket.emit("usersInRoom", otherUsers);
   });
 
-  // chat message -> broadcast to everyone in room (including sender)
+  // Call a specific user
+  socket.on("callUser", ({ to, signalData, from, name }) => {
+    if (to) io.to(to).emit("incomingCall", { signal: signalData, from, name });
+  });
+
+  // Answer a call
+  socket.on("answerCall", ({ to, signal }) => {
+    if (to) io.to(to).emit("callAccepted", signal);
+  });
+
+  // ICE candidates
+  socket.on("iceCandidate", ({ to, candidate }) => {
+    if (to) io.to(to).emit("iceCandidate", { candidate });
+  });
+
+  // Chat message
   socket.on("sendMessage", ({ chatId, sender, text }) => {
-    if (!chatId) chatId = "general";
-    console.log(`Message from ${sender} in ${chatId}: ${text}`);
-    // Emit to everyone in room
     io.to(chatId).emit("receiveMessage", { sender, text });
   });
 
-  // Caller sends offer to the room -> server forwards to all other sockets in the room
-  socket.on("callUser", ({ room, signalData, from, name }) => {
-    if (!room) room = "general";
-    // broadcast to everyone else in the room
-    socket.to(room).emit("incomingCall", { signal: signalData, from, name });
-  });
-
-  // A callee answers to a specific socket id
-  socket.on("answerCall", ({ to, signal }) => {
-    if (!to) return;
-    io.to(to).emit("callAccepted", signal);
-  });
-
-  // ICE candidate forwarding (to specific socket)
-  socket.on("iceCandidate", ({ to, candidate }) => {
-    if (!to || !candidate) return;
-    io.to(to).emit("iceCandidate", { candidate });
-  });
-
+  // Disconnect
   socket.on("disconnect", () => {
-    console.log("Socket disconnected:", socket.id);
+    for (const room in rooms) {
+      rooms[room].delete(socket.id);
+      if (rooms[room].size === 0) delete rooms[room];
+    }
   });
 });
 
