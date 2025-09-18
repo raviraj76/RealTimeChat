@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-time Chat</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+</head>
+<body>
+  <div class="chat-container">
+    <!-- User Panel -->
+    <div class="user-panel">
+      <div class="user-info">
+        <div class="dp-wrapper">
+          <img id="profile-img" src="assets/default-image.png" alt="User Image">
+        </div>
+        <span id="user-name">RAVI</span>
+      </div>
+      <input type="file" id="dpInput" accept="image/*">
+    </div>
+
+    <!-- Messages -->
+    <ul id="messages" class="messages"></ul>
+
+    <!-- Input Panel -->
+    <div class="input-panel">
+      <input id="message" type="text" placeholder="Type a message...">
+      <button onclick="sendMessage()">Send</button>
+      <button id="call-btn">📞 Call</button>
+      <button id="video-btn">🎥 Video</button>
+    </div>
+  </div>
+
+  <!-- Video Call UI -->
+  <div class="video-container" id="video-container" style="display:none;">
+    <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay></video>
+    <button id="end-call">❌ End Call</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html> 

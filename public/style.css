@@ -1,0 +1,278 @@
+/* ---------------- Reset & Base ---------------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(120deg, #d3a4f5, #fcb1e2);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+/* ---------------- Chat Container ---------------- */
+.chat-container {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(15px);
+  border-radius: 20px;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+  width: 100%;
+  max-width: 450px;
+  height: 650px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* ---------------- User Panel ---------------- */
+.user-panel {
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 20px 20px 0 0;
+  position: relative;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dp-wrapper {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid rgba(255,255,255,0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+#profile-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.dp-wrapper:hover #profile-img {
+  transform: scale(1.05);
+}
+
+#user-name {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+#dpInput {
+  position: absolute;
+  opacity: 0;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  left: 20px;
+  top: 15px;
+}
+
+/* ---------------- Messages ---------------- */
+.messages {
+  flex: 1;
+  list-style: none;
+  padding: 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.chat-bubble {
+  padding: 10px 15px;
+  border-radius: 20px;
+  max-width: 70%;
+  word-wrap: break-word;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+}
+
+/* Right - self */
+.chat-bubble.right {
+  background: linear-gradient(135deg, #4caf50, #43a047);
+  color: white;
+  margin-left: auto;
+  text-align: right;
+}
+
+/* Left - other user */
+.chat-bubble.left {
+  background: linear-gradient(135deg, #ffffff, #f1f1f1);
+  border: 1px solid #e0e0e0;
+  color: #333;
+  margin-right: auto;
+  text-align: left;
+}
+
+.chat-bubble.left strong {
+  color: #764ba2;
+}
+
+/* ---------------- Input Panel ---------------- */
+.input-panel {
+  padding: 15px 20px;
+  background: rgba(255,255,255,0.95);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+/* ---------- Message Typing Box - Professional ---------- */
+/* ---------- Message Typing Box - Professional & Glowing ---------- */
+#message {
+  flex: 1;
+  padding: 14px 20px;
+  border-radius: 30px;
+  border: 2px solid transparent; /* transparent for gradient border */
+  outline: none;
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+  background-color: #fdfdfd;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  position: relative;
+  z-index: 0;
+  transition: all 0.3s ease;
+  background-clip: padding-box; /* ensures background inside border */
+}
+
+/* Animated gradient border using pseudo element */
+#message::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 32px; /* slightly bigger than input */
+  padding: 2px;
+  background: linear-gradient(270deg, #ff6ec4, #7873f5, #4caf50, #fbc02d);
+  background-size: 600% 600%;
+  z-index: -1;
+  animation: gradientGlow 8s ease infinite;
+}
+
+/* Focus state to enhance glow */
+#message:focus {
+  border-color: transparent;
+  box-shadow: 0 0 12px rgba(102, 126, 234, 0.6);
+}
+
+/* Placeholder styling */
+#message::placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+/* Gradient animation */
+@keyframes gradientGlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.input-panel button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.input-panel button:hover {
+  transform: scale(1.05);
+}
+
+/* ---------------- Video Call ---------------- */
+.video-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 20px;
+  z-index: 1000;
+}
+
+#localVideo, #remoteVideo {
+  border-radius: 12px;
+  object-fit: cover;
+  border: 2px solid white;
+}
+
+#localVideo {
+  width: 150px;
+  height: 100px;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1001;
+}
+
+#remoteVideo {
+  width: 80%;
+  height: 60%;
+  max-width: 800px;
+}
+
+#end-call {
+  background: #dc3545;
+  color: white;
+  padding: 15px 30px;
+  font-size: 16px;
+  border-radius: 30px;
+  position: absolute;
+  bottom: 50px;
+}
+
+#end-call:hover {
+  background: #c82333;
+  transform: scale(1.05);
+}
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 768px) {
+  .chat-container { height: 90vh; max-width: 100%; }
+  .dp-wrapper { width: 40px; height: 40px; }
+  #user-name { font-size: 16px; }
+  #message { font-size: 13px; }
+  .input-panel button { font-size: 13px; padding: 8px 14px; }
+}
+
+@media (max-width: 480px) {
+  .dp-wrapper { width: 35px; height: 35px; }
+  #message { font-size: 12px; }
+  .input-panel button { font-size: 12px; padding: 6px 12px; }
+}
