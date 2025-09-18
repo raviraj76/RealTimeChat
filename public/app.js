@@ -42,7 +42,6 @@ function sendMessage() {
 
 socket.on("receiveMessage", ({ sender, text }) => {
   console.log("receiveMessage event:", sender, text);
-  // Ignore showing duplicate of own message (we already appended right side)
   if (sender === username) return;
   addMessage(text, "left", sender);
 });
@@ -55,7 +54,6 @@ function addMessage(text, side, sender = "") {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// simple sanitizer
 function sanitize(str) {
   return String(str).replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -87,18 +85,25 @@ const videoContainer = document.getElementById("video-container");
 const localVideo = document.getElementById("localVideo");
 const remoteVideo = document.getElementById("remoteVideo");
 
-callBtn?.addEventListener("click", () => startCall(/*audio*/ true, /*video*/ false));
+callBtn?.addEventListener("click", () => startCall(true, false));
 videoBtn?.addEventListener("click", () => startCall(true, true));
 endCallBtn?.addEventListener("click", endCall);
 
-// create RTCPeerConnection with STUN
+// ----------------- WebRTC with TURN -----------------
 function createPeerConnection(peerId) {
-  peerConnection = new RTCPeerConnection({
+  const configuration = {
     iceServers: [
-      { urls: "stun:stun.l.google.com:19302" } // public STUN
-      // Add TURN here in production if needed
+      { urls: "stun:stun.l.google.com:19302" }, // Google STUN
+      // Free TURN server
+      {
+        urls: "turn:relay1.expressturn.com:3478",
+        username: "efkM2P3Wc6P2rZcYcG",
+        credential: "Y0qFb2Czv1gYABwA"
+      }
     ]
-  });
+  };
+
+  peerConnection = new RTCPeerConnection(configuration);
 
   peerConnection.ontrack = (e) => {
     console.log("Remote track received");
@@ -107,14 +112,13 @@ function createPeerConnection(peerId) {
 
   peerConnection.onicecandidate = (e) => {
     if (e.candidate && peerId) {
-      // send candidate to the other side
       socket.emit("iceCandidate", { to: peerId, candidate: e.candidate });
       console.log("Sent ICE candidate to", peerId);
     }
   };
 }
 
-// start call = get media, create offer and broadcast offer to room
+// Start call: get media, create offer
 async function startCall(useAudio = true, useVideo = false) {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: useAudio, video: useVideo });
@@ -127,27 +131,21 @@ async function startCall(useAudio = true, useVideo = false) {
   localVideo.srcObject = localStream;
   videoContainer.style.display = "flex";
 
-  // Create peer connection and add tracks
-  // We don't yet know which peer will answer; we broadcast offer to room
   createPeerConnection(null);
   localStream.getTracks().forEach((t) => peerConnection.addTrack(t, localStream));
 
   const offer = await peerConnection.createOffer();
   await peerConnection.setLocalDescription(offer);
 
-  // Broadcast offer to other sockets in the room
   socket.emit("callUser", { room: chatId, signalData: offer, from: socket.id, name: username });
   console.log("Broadcasted offer to room", chatId);
 }
 
-// Incoming call -> set remote desc, create answer and send back to caller
+// Incoming call -> answer
 socket.on("incomingCall", async ({ signal, from, name }) => {
   console.log("Incoming call from:", from, name);
-
-  // Save caller id as peer
   currentCallPeerId = from;
 
-  // Acquire local media
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
   } catch (err) {
@@ -161,24 +159,19 @@ socket.on("incomingCall", async ({ signal, from, name }) => {
   createPeerConnection(from);
   localStream.getTracks().forEach((t) => peerConnection.addTrack(t, localStream));
 
-  // Set remote SDP (offer)
   await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
 
-  // Create answer
   const answer = await peerConnection.createAnswer();
   await peerConnection.setLocalDescription(answer);
 
-  // Send answer to the original caller (to = caller socket id)
   socket.emit("answerCall", { to: from, signal: answer });
   console.log("Sent answer to", from);
 });
 
-// Caller receives answer (callAccepted)
+// Caller receives answer
 socket.on("callAccepted", async (signal) => {
   console.log("Call accepted, setting remote description");
-  // caller should set remote description
   await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
-  // Now P2P should start exchanging tracks/candidates
 });
 
 // ICE candidates from server
@@ -188,6 +181,7 @@ socket.on("iceCandidate", ({ candidate }) => {
   if (peerConnection) peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => console.error(e));
 });
 
+// End call
 function endCall() {
   if (localStream) localStream.getTracks().forEach(t => t.stop());
   if (peerConnection) { peerConnection.close(); peerConnection = null; }
