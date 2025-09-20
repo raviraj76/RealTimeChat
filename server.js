@@ -6,11 +6,10 @@ const { Server } = require("socket.io");
 const app = express();
 const server = http.createServer(app);
 
-// Serve frontend
+// Serve frontend (put your HTML, script.js inside "public" folder)
 app.use(express.static("public"));
 
-// Users in rooms
-const rooms = {}; // room -> Set of socket ids
+const rooms = {}; // { roomId: Set(socketIds) }
 
 const io = new Server(server, {
   cors: { origin: "*", methods: ["GET", "POST"] }
@@ -19,46 +18,50 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id);
 
-  // Join chat room
+  // ✅ Join chat room
   socket.on("joinChat", ({ room, username }) => {
     if (!rooms[room]) rooms[room] = new Set();
     rooms[room].add(socket.id);
+
     socket.join(room);
     socket.data.username = username;
 
-    // Send other users in room to this user
+    console.log(`${username} joined room: ${room}`);
+
+    // Send other users in room (for video call)
     const otherUsers = Array.from(rooms[room]).filter(id => id !== socket.id);
     socket.emit("usersInRoom", otherUsers);
   });
 
-  // Call a specific user
+  // ✅ Video call: callUser
   socket.on("callUser", ({ to, signalData, from, name }) => {
-    if (to) io.to(to).emit("incomingCall", { signal: signalData, from, name });
+    io.to(to).emit("incomingCall", { signal: signalData, from, name });
   });
 
-  // Answer a call
+  // ✅ Video call: answerCall
   socket.on("answerCall", ({ to, signal }) => {
-    if (to) io.to(to).emit("callAccepted", signal);
+    io.to(to).emit("callAccepted", signal);
   });
 
-  // ICE candidates
+  // ✅ WebRTC ICE Candidates
   socket.on("iceCandidate", ({ to, candidate }) => {
-    if (to) io.to(to).emit("iceCandidate", { candidate });
+    io.to(to).emit("iceCandidate", { candidate });
   });
 
-  // Chat message
-  socket.on("sendMessage", ({ chatId, sender, text }) => {
-    io.to(chatId).emit("receiveMessage", { sender, text });
+  // ✅ Chat messaging
+  socket.on("sendMessage", ({ room, sender, text }) => {
+    io.to(room).emit("receiveMessage", { sender, text });
   });
 
-  // Disconnect
+  // ✅ Disconnect handling
   socket.on("disconnect", () => {
     for (const room in rooms) {
       rooms[room].delete(socket.id);
       if (rooms[room].size === 0) delete rooms[room];
     }
+    console.log("Socket disconnected:", socket.id);
   });
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
